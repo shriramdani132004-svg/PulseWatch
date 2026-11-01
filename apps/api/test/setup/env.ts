@@ -30,7 +30,7 @@ function loadDotEnv(): void {
 loadDotEnv();
 
 process.env.NODE_ENV = 'test';
-process.env.PORT = process.env.PORT ?? '0';
+process.env.PORT = process.env.PORT ?? '4000';
 process.env.FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN ?? 'http://localhost:3000';
 
 if (process.env.TEST_DATABASE_URL) {
