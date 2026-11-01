@@ -9,6 +9,17 @@ export function cn(...classes: Array<string | false | null | undefined>): string
   return classes.filter(Boolean).join(' ');
 }
 
+/**
+ * Static exports with `trailingSlash: true` can surface paths such as
+ * `/login/` to `usePathname()`. Normalize them so route checks and active
+ * navigation states match the canonical paths used by the app.
+ */
+export function normalizePathname(pathname: string | null | undefined): string {
+  if (!pathname) return '/';
+  const trimmed = pathname.replace(/\/+$/, '');
+  return trimmed === '' ? '/' : trimmed;
+}
+
 export function formatDateTime(value: string | Date | null | undefined): string {
   if (!value) return '—';
   const date = typeof value === 'string' ? new Date(value) : value;

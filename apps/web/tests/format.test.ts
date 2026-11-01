@@ -5,6 +5,7 @@ import {
   formatPercent,
   formatRelative,
   INCIDENT_STATUS_META,
+  normalizePathname,
   SEVERITY_META,
   STATUS_META,
 } from '@/lib/format';
@@ -28,6 +29,15 @@ describe('format helpers', () => {
   it('handles missing and invalid timestamps', () => {
     expect(formatRelative(null)).toBe('Never');
     expect(formatRelative('not-a-date')).toBe('Never');
+  });
+
+  it('normalizes static-export trailing slashes for route matching', () => {
+    expect(normalizePathname('/register/')).toBe('/register');
+    expect(normalizePathname('/login/')).toBe('/login');
+    expect(normalizePathname('/monitor/')).toBe('/monitor');
+    expect(normalizePathname('/')).toBe('/');
+    expect(normalizePathname('')).toBe('/');
+    expect(normalizePathname(null)).toBe('/');
   });
 
   it('defines every monitor, incident, and severity state', () => {

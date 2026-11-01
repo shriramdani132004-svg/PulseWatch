@@ -16,7 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
-import { cn } from '@/lib/format';
+import { cn, normalizePathname } from '@/lib/format';
 import { Logo } from '@/components/logo';
 import { API_DOCS_URL } from '@/lib/api';
 
@@ -47,7 +47,7 @@ function isActive(pathname: string, href: string): boolean {
 }
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
-  const pathname = usePathname();
+  const pathname = normalizePathname(usePathname());
   return (
     <nav className="space-y-1" aria-label="Primary navigation">
       {NAV_ITEMS.map((item) => {
@@ -144,7 +144,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
+  const pathname = normalizePathname(usePathname());
   const [open, setOpen] = useState(false);
   const title = TITLES[pathname] ?? 'PulseWatch';
 
