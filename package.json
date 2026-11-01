@@ -1,0 +1,45 @@
+{
+  "name": "pulsewatch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PulseWatch - API monitoring and incident management platform",
+  "packageManager": "pnpm@10.20.0",
+  "engines": {
+    "node": ">=22 <25"
+  },
+  "scripts": {
+    "build": "corepack pnpm build:shared && corepack pnpm --filter @pulsewatch/api build && corepack pnpm --filter @pulsewatch/web build",
+    "build:shared": "corepack pnpm --filter @pulsewatch/shared build",
+    "build:api": "corepack pnpm build:shared && corepack pnpm --filter @pulsewatch/api build",
+    "build:web": "corepack pnpm build:shared && corepack pnpm --filter @pulsewatch/web build",
+    "dev": "corepack pnpm build:shared && concurrently -n api,web -c cyan,magenta \"corepack pnpm --filter @pulsewatch/api dev\" \"corepack pnpm --filter @pulsewatch/web dev\"",
+    "dev:api": "corepack pnpm build:shared && corepack pnpm --filter @pulsewatch/api dev",
+    "dev:web": "corepack pnpm build:shared && corepack pnpm --filter @pulsewatch/web dev",
+    "lint": "corepack pnpm -r lint",
+    "typecheck": "corepack pnpm build:shared && corepack pnpm -r typecheck",
+    "test": "corepack pnpm build:shared && corepack pnpm --filter @pulsewatch/api test && corepack pnpm --filter @pulsewatch/web test",
+    "test:api": "corepack pnpm build:shared && corepack pnpm --filter @pulsewatch/api test",
+    "test:api:integration": "corepack pnpm build:shared && corepack pnpm --filter @pulsewatch/api test:integration",
+    "test:api:e2e": "corepack pnpm build:shared && corepack pnpm --filter @pulsewatch/api test:e2e",
+    "test:web": "corepack pnpm build:shared && corepack pnpm --filter @pulsewatch/web test",
+    "test:coverage": "corepack pnpm build:shared && corepack pnpm --filter @pulsewatch/api test:coverage && corepack pnpm --filter @pulsewatch/web test:coverage",
+    "prisma:generate": "prisma generate",
+    "prisma:validate": "prisma validate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
+    "prisma:status": "prisma migrate status",
+    "start:prod": "node scripts/render-start.mjs",
+    "postinstall": "prisma generate"
+  },
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "prisma": "^6.19.0",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.0"
+  }
+}

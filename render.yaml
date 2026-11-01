@@ -1,0 +1,80 @@
+# Render Blueprint for PulseWatch.
+#
+# Free-tier topology:
+#   - pulsewatch-kv   : Render Key Value (free, 25 MB, no persistence)
+#   - pulsewatch-api  : NestJS API web service (free, spins down when idle)
+#   - pulsewatch-web  : Next.js static export on Render's global CDN
+#   - PostgreSQL      : Neon free project (external, configured with sync:false)
+#
+# Secrets are never committed. Set DATABASE_URL, DIRECT_URL, JWT_SECRET,
+# JWT_REFRESH_SECRET, and MONITOR_ENCRYPTION_KEY in the Render Dashboard
+# (or with `render services update --env-var`). The API refuses to start if
+# any of them are missing or malformed.
+
+services:
+  - type: keyvalue
+    name: pulsewatch-kv
+    plan: free
+    region: oregon
+    maxmemoryPolicy: noeviction
+    persistenceMode: off
+    ipAllowList: [] # Internal Render network only
+
+  - type: web
+    name: pulsewatch-api
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: corepack enable && corepack pnpm install --frozen-lockfile && corepack pnpm build:api
+    startCommand: node scripts/render-start.mjs
+    healthCheckPath: /api/v1/health/live
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: '22'
+      - key: DATABASE_URL
+        sync: false # Neon pooled connection string
+      - key: DIRECT_URL
+        sync: false # Neon direct connection string (migrations)
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: pulsewatch-kv
+          property: connectionString
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: MONITOR_ENCRYPTION_KEY
+        sync: false # base64-encoded 32 bytes
+      - key: FRONTEND_ORIGIN
+        value: https://pulsewatch-web.onrender.com
+
+  - type: web
+    name: pulsewatch-web
+    runtime: static
+    buildCommand: corepack enable && corepack pnpm install --frozen-lockfile && corepack pnpm build:web
+    staticPublishPath: apps/web/out
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: NEXT_PUBLIC_API_BASE_URL
+        value: https://pulsewatch-api.onrender.com
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: /404.html

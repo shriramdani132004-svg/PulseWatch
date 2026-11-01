@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum MonitorMethod {
+  GET
+  HEAD
+  POST
+}
+
+enum MonitorStatus {
+  PENDING
+  OPERATIONAL
+  DEGRADED
+  DOWN
+  PAUSED
+  UNKNOWN
+}
+
+enum CheckSource {
+  SCHEDULED
+  MANUAL
+}
+
+enum IncidentSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+enum IncidentEventType {
+  CREATED
+  ACKNOWLEDGED
+  RESOLVED
+  CHECK_FAILED
+  RECOVERY_DETECTED
+  STATUS_CHANGED
+  NOTE
+}
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  name         String    @db.VarChar(80)
+  email        String    @unique @db.VarChar(320)
+  passwordHash String    @db.VarChar(255)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+  monitors     Monitor[]
+
+  @@index([createdAt])
+}
+
+model Session {
+  id               String    @id @default(uuid()) @db.Uuid
+  userId           String    @db.Uuid
+  refreshTokenHash String    @unique @db.VarChar(128)
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  lastUsedAt       DateTime  @default(now())
+  userAgent        String?   @db.VarChar(255)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, revokedAt])
+  @@index([expiresAt])
+}
+
+model Monitor {
+  id                     String        @id @default(uuid()) @db.Uuid
+  userId                 String        @db.Uuid
+  name                   String        @db.VarChar(100)
+  description            String?       @db.VarChar(500)
+  targetUrl              String        @db.VarChar(2048)
+  method                 MonitorMethod @default(GET)
+  intervalSeconds        Int           @default(300)
+  timeoutMs              Int           @default(10000)
+  expectedStatusMin      Int           @default(200)
+  expectedStatusMax      Int           @default(299)
+  failureThreshold       Int           @default(3)
+  recoveryThreshold      Int           @default(1)
+  degradedResponseTimeMs Int           @default(2000)
+  consecutiveFailures    Int           @default(0)
+  consecutiveSuccesses   Int           @default(0)
+  currentStatus          MonitorStatus @default(PENDING)
+  lastCheckedAt          DateTime?
+  nextCheckAt            DateTime      @default(now())
+  pausedAt               DateTime?
+  encryptedHeaders       String?       @db.Text
+  leaseOwner             String?       @db.Uuid
+  leaseExpiresAt         DateTime?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  user                   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checks                 CheckResult[]
+  incidents              Incident[]
+
+  @@index([userId, currentStatus])
+  @@index([nextCheckAt])
+  @@index([userId, createdAt])
+  @@index([leaseExpiresAt])
+  @@index([pausedAt, nextCheckAt])
+}
+
+model CheckResult {
+  id                    String      @id @default(uuid()) @db.Uuid
+  monitorId             String      @db.Uuid
+  checkedAt             DateTime    @default(now())
+  successful            Boolean
+  httpStatus            Int?
+  responseTimeMs        Int?
+  errorCode             String?     @db.VarChar(64)
+  sanitizedErrorMessage String?     @db.VarChar(500)
+  source                CheckSource @default(SCHEDULED)
+  redirectCount         Int         @default(0)
+  monitor               Monitor     @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+
+  @@index([monitorId, checkedAt])
+  @@index([monitorId, successful, checkedAt])
+  @@index([checkedAt])
+  @@index([monitorId, httpStatus])
+}
+
+model Incident {
+  id             String          @id @default(uuid()) @db.Uuid
+  monitorId      String          @db.Uuid
+  title          String          @db.VarChar(200)
+  description    String          @db.VarChar(1000)
+  severity       IncidentSeverity @default(HIGH)
+  status         IncidentStatus  @default(OPEN)
+  startedAt      DateTime        @default(now())
+  acknowledgedAt DateTime?
+  resolvedAt     DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  monitor        Monitor         @relation(fields: [monitorId], references: [id], onDelete: Cascade)
+  events         IncidentEvent[]
+
+  @@index([monitorId, status])
+  @@index([status, startedAt])
+  @@index([severity, status])
+  @@index([startedAt])
+  @@index([monitorId, startedAt])
+}
+
+model IncidentEvent {
+  id          String            @id @default(uuid()) @db.Uuid
+  incidentId  String            @db.Uuid
+  eventType   IncidentEventType
+  description String            @db.VarChar(1000)
+  metadata    Json?
+  createdAt   DateTime          @default(now())
+  incident    Incident          @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+
+  @@index([incidentId, createdAt])
+}
