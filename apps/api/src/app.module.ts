@@ -82,6 +82,6 @@ import { OriginValidationMiddleware } from './common/middleware/origin-validatio
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(OriginValidationMiddleware).forRoutes('*');
+    consumer.apply(OriginValidationMiddleware).forRoutes('{*path}');
   }
 }
