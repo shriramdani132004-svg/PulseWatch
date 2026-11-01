@@ -60,7 +60,7 @@ services:
       - key: NODE_VERSION
         value: '22'
       - key: NEXT_PUBLIC_API_BASE_URL
-        value: https://pulsewatch-api.onrender.com
+        value: https://pulsewatch-api-e86n.onrender.com
     headers:
       - path: /*
         name: X-Content-Type-Options
